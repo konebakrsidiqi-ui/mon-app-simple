@@ -18,12 +18,23 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install dependencies
+    - name: Install System Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libsqlite3-dev
+        sudo apt-get install -y libsqlite3-dev lldb lld zlib1g-dev zip unzip autoconf libtool pkg-config openjdk-17-jdk
+
+    - name: Install Python Dependencies
+      run: |
         pip install --upgrade pip
-        pip install buildozer cython git+https://github.com/kivy/buildozer.git
+        pip install cython virtualenv
+        pip install git+https://github.com/kivy/buildozer.git
+
+    - name: Force Android SDK Version 34
+      run: |
+        # On crée le dossier en avance pour forcer Buildozer à utiliser l'API 34 stable
+        mkdir -p ~/.buildozer/android/platform/
+        echo "android.api = 34" >> buildozer.spec
+        echo "android.build_tools_version = 34.0.0" >> buildozer.spec
 
     - name: Build with Buildozer
       run: |
