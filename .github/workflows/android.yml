@@ -23,26 +23,29 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libsqlite3-dev lldb lld zlib1g-dev zip unzip autoconf libtool pkg-config openjdk-17-jdk
 
-    - name: Install Python Dependencies
+    - name: Install Stable Python Dependencies
       run: |
         pip install --upgrade pip
         pip install cython virtualenv
-        pip install git+https://github.com/kivy/buildozer.git
+        # On installe la dernière version stable officielle de Buildozer (pas la branche master)
+        pip install buildozer==1.5.0
 
-    - name: Pre-accept Android Licenses (Force)
+    - name: Configure SDK Tools and Accept Licenses
       run: |
-        # Cette étape télécharge l'outil de gestion des licences et les accepte toutes une par une
-        mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline.zip
-        unzip cmdline.zip -d ~/.buildozer/android/platform/android-sdk/
-        mv ~/.buildozer/android/platform/android-sdk/cmdline-tools/* ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/ 2>/dev/null || true
+        # On configure Buildozer pour qu'il télécharge une version stable des outils Android
+        # en modifiant directement le fichier de configuration avant la compilation
+        sed -i 's/#android.api = 31/android.api = 34/' buildozer.spec
+        sed -i 's/#android.build_tools_version = .*/android.build_tools_version = 34.0.0/' buildozer.spec
         
-        # On valide toutes les licences Android d'un coup
-        yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses --sdk_root=/home/runner/.buildozer/android/platform/android-sdk || true
+        # On force l'acceptation globale des licences via l'environnement de Buildozer
+        mkdir -p ~/.buildozer
+        echo "[buildozer]" > ~/.buildozer/config
+        echo "warn_on_root = 1" >> ~/.buildozer/config
 
     - name: Build with Buildozer
       run: |
-        buildozer android debug
+        # L'option --verbose permet de voir précisément chaque étape en cas de besoin
+        buildozer --verbose android debug
       env:
         APP_ANDROID_ACCEPT_SDK_LICENSE: "y"
 
